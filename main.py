@@ -19,10 +19,11 @@ def health():
 def catch_all(path):
     # Lấy body và header từ client
     body = request.get_data()
-    headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
     
-    # ====== SỬA REQUEST BẮN ======
-    if any(key in path.lower() for key in ['shoot', 'fire', 'attack', 'hit', 'damage']):
+    # ====== CHỈ SỬA REQUEST BẮN ======
+    is_attack = any(key in path.lower() for key in ['shoot', 'fire', 'attack', 'hit', 'damage'])
+    
+    if is_attack:
         try:
             data = json.loads(body.decode('utf-8')) if body else {}
             if isinstance(data, dict):
@@ -35,12 +36,17 @@ def catch_all(path):
                 data["isHeadshot"] = True
                 data["hitType"] = "head"
             body = json.dumps(data).encode('utf-8')
-            headers['Content-Length'] = str(len(body))
             print(f"[+] SỬA REQUEST BẮN -> HEADSHOT")
         except Exception as e:
             print(f"[-] LỖI SỬA: {e}")
     
-    # Forward lên server thật
+    # ====== FORWARD LÊN SERVER THẬT (GIỮ NGUYÊN HEADER) ======
+    # Lấy tất cả header từ request gốc
+    headers = dict(request.headers)
+    # Xóa header Host và Content-Length (requests tự thêm)
+    headers.pop('Host', None)
+    headers.pop('Content-Length', None)
+    
     try:
         resp = requests.request(
             method=request.method,
