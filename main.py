@@ -7,7 +7,16 @@ app = Flask(__name__)
 
 REAL_SERVER = "https://clientbp.ggpolarbear.com"
 
-@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+# ====== ROUTE GỐC ======
+@app.route('/')
+def home():
+    return "Proxy Headshot is running! Visit /health to check."
+
+@app.route('/health')
+def health():
+    return "OK", 200
+
+# ====== CATCH ALL REQUEST (TRỪ ROOT VÀ HEALTH) ======
 @app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def catch_all(path):
     # Lấy body request từ client
@@ -46,11 +55,3 @@ def catch_all(path):
     except Exception as e:
         print(f"[-] LỖI FORWARD: {e}")
         return {"error": str(e)}, 502
-
-@app.route('/health', methods=['GET'])
-def health():
-    return "OK", 200
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
