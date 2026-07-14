@@ -1,9 +1,10 @@
 from flask import Flask, request, Response
 import requests
 import json
-import re
+import os
 
 app = Flask(__name__)
+
 REAL_SERVER = "https://clientbp.ggpolarbear.com"
 
 @app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -15,32 +16,22 @@ def catch_all(path):
     # Nếu là request bắn -> sửa thành headshot
     if any(key in path.lower() for key in ['shoot', 'fire', 'attack', 'hit', 'damage']):
         try:
-            # Parse body JSON
             data = json.loads(body) if body else {}
-            
-            # Sửa thông tin trúng thành HEAD
             if isinstance(data, dict):
-                # Sửa hitbox
                 if "hitbox" in data:
                     data["hitbox"] = "head"
                 if "bodyPart" in data:
                     data["bodyPart"] = "head"
                 if "part" in data:
                     data["part"] = "head"
-                # Sửa tọa độ trúng (nếu có)
                 if "hitPos" in data:
                     data["hitPos"] = {"x": 0, "y": 0, "z": 0}
-                if "position" in data:
-                    data["position"] = {"x": 0, "y": 0, "z": 0}
-                # Đánh dấu headshot
                 data["isHeadshot"] = True
                 data["hitType"] = "head"
-            
-            # Chuyển lại thành JSON
             body = json.dumps(data)
             print(f"[+] SỬA REQUEST BẮN -> HEADSHOT")
-        except:
-            pass
+        except Exception as e:
+            print(f"[-] LỖI SỬA REQUEST: {e}")
     
     # Forward request đã sửa lên server thật
     try:
@@ -53,4 +44,13 @@ def catch_all(path):
         )
         return Response(resp.content, status=resp.status_code, headers=dict(resp.headers))
     except Exception as e:
+        print(f"[-] LỖI FORWARD: {e}")
         return {"error": str(e)}, 502
+
+@app.route('/health', methods=['GET'])
+def health():
+    return "OK", 200
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
