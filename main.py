@@ -1,7 +1,6 @@
 from flask import Flask, request, Response
 import requests
 import json
-import os
 
 app = Flask(__name__)
 
@@ -9,7 +8,7 @@ REAL_SERVER = "https://clientbp.ggpolarbear.com"
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Proxy Headshot is running! Use /health to check."
+    return "Proxy Headshot is running!"
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -17,13 +16,11 @@ def health():
 
 @app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def catch_all(path):
-    # Lấy body và header từ client
     body = request.get_data()
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
     
-    # ====== CHỈ SỬA REQUEST BẮN ======
-    is_attack = any(key in path.lower() for key in ['shoot', 'fire', 'attack', 'hit', 'damage'])
-    
-    if is_attack:
+    # ====== CHỈ SỬA REQUEST BẮN (KHÔNG ĐỤNG VÀO LOGIN) ======
+    if any(key in path.lower() for key in ['shoot', 'fire', 'attack', 'hit', 'damage']):
         try:
             data = json.loads(body.decode('utf-8')) if body else {}
             if isinstance(data, dict):
@@ -40,13 +37,7 @@ def catch_all(path):
         except Exception as e:
             print(f"[-] LỖI SỬA: {e}")
     
-    # ====== FORWARD LÊN SERVER THẬT (GIỮ NGUYÊN HEADER) ======
-    # Lấy tất cả header từ request gốc
-    headers = dict(request.headers)
-    # Xóa header Host và Content-Length (requests tự thêm)
-    headers.pop('Host', None)
-    headers.pop('Content-Length', None)
-    
+    # ====== FORWARD TẤT CẢ (KỂ CẢ MAJORLOGIN) ======
     try:
         resp = requests.request(
             method=request.method,
@@ -55,7 +46,6 @@ def catch_all(path):
             data=body,
             timeout=10
         )
-        # Trả về response từ server thật
         return Response(resp.content, status=resp.status_code, headers=dict(resp.headers))
     except Exception as e:
         print(f"[-] LỖI FORWARD: {e}")
