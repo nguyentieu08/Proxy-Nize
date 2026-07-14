@@ -7,12 +7,13 @@ app = Flask(__name__)
 
 REAL_SERVER = "https://clientbp.ggpolarbear.com"
 
-# ====== ROUTE GỐC ======
-@app.route('/')
+# ====== ROUTE GỐC (KHÔNG FORWARD) ======
+@app.route('/', methods=['GET'])
 def home():
-    return "Proxy Headshot is running! Visit /health to check."
+    return "Proxy Headshot is running! Use /health to check."
 
-@app.route('/health')
+# ====== ROUTE KIỂM TRA ======
+@app.route('/health', methods=['GET'])
 def health():
     return "OK", 200
 
